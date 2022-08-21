@@ -1,4 +1,4 @@
-package jar;
+package com.app;
 
 /**
  * Hello world!
