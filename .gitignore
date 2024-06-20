@@ -1,3 +1,39 @@
+import java.util.Random;
+
+public class UniqueRandomNumber {
+    public static void main(String[] args) {
+        System.out.println(generateUniqueRandomNumber());
+    }
+
+    public static long generateUniqueRandomNumber() {
+        // Get current time in milliseconds
+        long currentTimeMillis = System.currentTimeMillis();
+        
+        // Convert to string to get length
+        String currentTimeString = Long.toString(currentTimeMillis);
+        
+        // Calculate number of random digits needed to make it 19 digits long
+        int remainingDigits = 19 - currentTimeString.length();
+        
+        // Generate random number with remaining digits
+        Random random = new Random();
+        StringBuilder randomDigits = new StringBuilder();
+        
+        // Ensure the first random digit is not zero to maintain the number of digits
+        randomDigits.append(random.nextInt(9) + 1);
+        for (int i = 1; i < remainingDigits; i++) {
+            randomDigits.append(random.nextInt(10));
+        }
+        
+        // Combine the current time and random digits
+        String uniqueRandomNumberString = currentTimeString + randomDigits.toString();
+        
+        // Convert to long
+        return Long.parseLong(uniqueRandomNumberString);
+    }
+}
+
+####
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
