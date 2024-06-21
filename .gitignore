@@ -1,37 +1,368 @@
-import java.util.Random;
+To set up a production-grade logging system using SLF4J with Log4j2 in a Spring Boot application, follow these steps. We'll configure logging to capture log messages from various layers (Controller, Service, DAO) and set up a rolling policy for log rotation.
 
-public class UniqueRandomNumber {
-    public static void main(String[] args) {
-        System.out.println(generateUniqueRandomNumber());
+### Step 1: Add Dependencies
+
+First, add the required dependencies for SLF4J and Log4j2 in your `pom.xml` file.
+
+```xml
+<dependencies>
+    <!-- Spring Boot dependencies -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Logging dependencies -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-log4j2</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### Step 2: Create Log4j2 Configuration File
+
+Create a `log4j2.xml` configuration file in the `src/main/resources` directory.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <RollingFile name="RollingFileAppender" fileName="logs/app.log" filePattern="logs/app-%d{yyyy-MM-dd}.log">
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10MB" />
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.yourpackage.controller" level="INFO" additivity="false">
+            <AppenderRef ref="RollingFileAppender" />
+        </Logger>
+        <Logger name="com.yourpackage.service" level="DEBUG" additivity="false">
+            <AppenderRef ref="RollingFileAppender" />
+        </Logger>
+        <Logger name="com.yourpackage.dao" level="WARN" additivity="false">
+            <AppenderRef ref="RollingFileAppender" />
+        </Logger>
+        <Root level="ERROR">
+            <AppenderRef ref="RollingFileAppender" />
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+### Step 3: Configure Spring Boot Application Properties
+
+Ensure that your `application.properties` file includes the following properties to use Log4j2 as the logging framework.
+
+```properties
+# Logging configuration
+logging.config=classpath:log4j2.xml
+```
+
+### Step 4: Implement Logging in Your Application
+
+Here's an example of how to implement logging in different layers of your Spring Boot application.
+
+#### Controller Layer
+
+```java
+package com.yourpackage.controller;
+
+import com.yourpackage.service.EmployeeService;
+import com.yourpackage.model.Employee;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping
+    public List<Employee> getAllEmployees() {
+        logger.info("Fetching all employees");
+        return employeeService.getAllEmployees();
     }
 
-    public static long generateUniqueRandomNumber() {
-        // Get current time in milliseconds
-        long currentTimeMillis = System.currentTimeMillis();
-        
-        // Convert to string to get length
-        String currentTimeString = Long.toString(currentTimeMillis);
-        
-        // Calculate number of random digits needed to make it 19 digits long
-        int remainingDigits = 19 - currentTimeString.length();
-        
-        // Generate random number with remaining digits
-        Random random = new Random();
-        StringBuilder randomDigits = new StringBuilder();
-        
-        // Ensure the first random digit is not zero to maintain the number of digits
-        randomDigits.append(random.nextInt(9) + 1);
-        for (int i = 1; i < remainingDigits; i++) {
-            randomDigits.append(random.nextInt(10));
-        }
-        
-        // Combine the current time and random digits
-        String uniqueRandomNumberString = currentTimeString + randomDigits.toString();
-        
-        // Convert to long
-        return Long.parseLong(uniqueRandomNumberString);
+    @GetMapping("/{id}")
+    public Employee getEmployeeById(@PathVariable Long id) {
+        logger.info("Fetching employee with id: {}", id);
+        return employeeService.getEmployeeById(id);
+    }
+
+    @PostMapping
+    public Employee createEmployee(@RequestBody Employee employee) {
+        logger.info("Creating new employee: {}", employee);
+        return employeeService.createEmployee(employee);
+    }
+
+    @PutMapping("/{id}")
+    public Employee updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
+        logger.info("Updating employee with id: {}", id);
+        return employeeService.updateEmployee(id, employee);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteEmployee(@PathVariable Long id) {
+        logger.warn("Deleting employee with id: {}", id);
+        employeeService.deleteEmployee(id);
     }
 }
+```
+
+#### Service Layer
+
+```java
+package com.yourpackage.service;
+
+import com.yourpackage.dao.EmployeeRepository;
+import com.yourpackage.model.Employee;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class EmployeeService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    public List<Employee> getAllEmployees() {
+        logger.debug("Getting all employees from the database");
+        return employeeRepository.findAll();
+    }
+
+    public Employee getEmployeeById(Long id) {
+        logger.debug("Getting employee with id: {}", id);
+        return employeeRepository.findById(id).orElse(null);
+    }
+
+    public Employee createEmployee(Employee employee) {
+        logger.debug("Saving new employee to the database: {}", employee);
+        return employeeRepository.save(employee);
+    }
+
+    public Employee updateEmployee(Long id, Employee employee) {
+        logger.debug("Updating employee with id: {}", id);
+        return employeeRepository.save(employee);
+    }
+
+    public void deleteEmployee(Long id) {
+        logger.debug("Deleting employee with id: {}", id);
+        employeeRepository.deleteById(id);
+    }
+}
+```
+
+#### DAO Layer
+
+```java
+package com.yourpackage.dao;
+
+import com.yourpackage.model.Employee;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+}
+```
+
+### Step 5: Test the Configuration
+
+Run your Spring Boot application and perform some CRUD operations on the Employee API. Check the `logs/app.log` file to see the logged messages.
+
+By following these steps, you will have a production-grade logging setup using SLF4J with Log4j2 in your Spring Boot application, capturing log messages at different levels from various layers, and rotating logs based on time and size policies.
+
+#### 2
+Configuring a production-grade logging framework using SLF4J and Log4j2 in a Spring Boot application involves several steps. You will need to add the necessary dependencies, configure the logging framework using a `log4j2.xml` file, and ensure your code is set up to use the appropriate logging levels.
+
+Here are the steps to achieve this:
+
+### Step 1: Add Dependencies
+
+First, ensure you have the necessary dependencies in your `pom.xml` file:
+
+```xml
+<dependencies>
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Starter Log4j2 -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-log4j2</artifactId>
+    </dependency>
+
+    <!-- SLF4J binding for Log4j2 -->
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### Step 2: Create `log4j2.xml` Configuration File
+
+Create a `log4j2.xml` file in the `src/main/resources` directory. This file will configure Log4j2 to log messages from your application to `app.log` with different log levels.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </Console>
+        
+        <!-- File Appender -->
+        <File name="File" fileName="logs/app.log" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <!-- Root Logger -->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+        
+        <!-- Application-specific loggers -->
+        <Logger name="com.yourcompany.yourapp.controller" level="debug" additivity="false">
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Logger name="com.yourcompany.yourapp.service" level="info" additivity="false">
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Logger name="com.yourcompany.yourapp.dao" level="warn" additivity="false">
+            <AppenderRef ref="File"/>
+        </Logger>
+    </Loggers>
+</Configuration>
+```
+
+### Step 3: Configure Logging in Your Code
+
+Ensure that your Spring Boot application and its components (Controller, Service, DAO) are using SLF4J for logging. Here’s an example of how you can use logging in your components:
+
+#### Controller Example
+```java
+package com.yourcompany.yourapp.controller;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/employees")
+public class EmployeeController {
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
+
+    @GetMapping("/{id}")
+    public String getEmployee(@PathVariable String id) {
+        logger.debug("Fetching employee with ID: {}", id);
+        // Your logic here
+        return "Employee";
+    }
+
+    @PostMapping
+    public String createEmployee(@RequestBody String employee) {
+        logger.info("Creating new employee: {}", employee);
+        // Your logic here
+        return "Employee Created";
+    }
+
+    @PutMapping("/{id}")
+    public String updateEmployee(@PathVariable String id, @RequestBody String employee) {
+        logger.warn("Updating employee with ID: {}", id);
+        // Your logic here
+        return "Employee Updated";
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteEmployee(@PathVariable String id) {
+        logger.error("Deleting employee with ID: {}", id);
+        // Your logic here
+        return "Employee Deleted";
+    }
+}
+```
+
+#### Service Example
+```java
+package com.yourcompany.yourapp.service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EmployeeService {
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
+
+    public void performService() {
+        logger.info("Performing service operation");
+        // Your logic here
+    }
+}
+```
+
+#### DAO Example
+```java
+package com.yourcompany.yourapp.dao;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class EmployeeDAO {
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeDAO.class);
+
+    public void performDatabaseOperation() {
+        logger.warn("Performing database operation");
+        // Your logic here
+    }
+}
+```
+
+### Step 4: Run Your Application
+
+When you run your Spring Boot application, Log4j2 will use the `log4j2.xml` configuration to log messages from the Controller, Service, and DAO layers to `app.log` with the specified log levels (DEBUG, INFO, WARN, ERROR).
+
+You can customize the logging patterns, log levels, and appenders as per your requirements. This configuration will ensure that all log messages are captured in the `app.log` file with appropriate log levels.
+
 
 ####
 HELP.md
