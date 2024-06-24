@@ -1,0 +1,144 @@
+To log the request body used for creating an Employee record in JSON format at the DEBUG log level using Log4j2 in a Spring Boot application, you can follow these steps:
+
+1. **Add Log4j2 dependencies**: Ensure you have the Log4j2 dependencies in your `pom.xml` file.
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-log4j2</artifactId>
+   </dependency>
+   ```
+
+2. **Configure Log4j2**: Create or update the `log4j2.xml` configuration file in the `src/main/resources` directory to include a logger for your service class.
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <Configuration status="WARN">
+       <Appenders>
+           <Console name="Console" target="SYSTEM_OUT">
+               <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+           </Console>
+           <File name="File" fileName="logs/app.log">
+               <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+           </File>
+       </Appenders>
+       <Loggers>
+           <Logger name="com.yourcompany.yourapp.service" level="debug" additivity="false">
+               <AppenderRef ref="File"/>
+           </Logger>
+           <Root level="info">
+               <AppenderRef ref="Console"/>
+               <AppenderRef ref="File"/>
+           </Root>
+       </Loggers>
+   </Configuration>
+   ```
+
+3. **Service Implementation**: Update your service implementation class to log the request body.
+
+   ```java
+   package com.yourcompany.yourapp.service;
+
+   import com.fasterxml.jackson.core.JsonProcessingException;
+   import com.fasterxml.jackson.databind.ObjectMapper;
+   import org.apache.logging.log4j.LogManager;
+   import org.apache.logging.log4j.Logger;
+   import org.springframework.stereotype.Service;
+
+   @Service
+   public class EmployeeService {
+
+       private static final Logger logger = LogManager.getLogger(EmployeeService.class);
+       private final ObjectMapper objectMapper;
+
+       public EmployeeService(ObjectMapper objectMapper) {
+           this.objectMapper = objectMapper;
+       }
+
+       public void createEmployee(Employee employee) {
+           if (logger.isDebugEnabled()) {
+               try {
+                   String employeeJson = objectMapper.writeValueAsString(employee);
+                   logger.debug("Creating Employee with request body: {}", employeeJson);
+               } catch (JsonProcessingException e) {
+                   logger.error("Error while converting Employee object to JSON", e);
+               }
+           }
+           // Your logic to create the employee record
+       }
+   }
+   ```
+
+4. **Employee Controller**: Ensure your controller is correctly wired to call the service method.
+
+   ```java
+   package com.yourcompany.yourapp.controller;
+
+   import com.yourcompany.yourapp.service.EmployeeService;
+   import org.springframework.beans.factory.annotation.Autowired;
+   import org.springframework.http.HttpStatus;
+   import org.springframework.http.ResponseEntity;
+   import org.springframework.web.bind.annotation.PostMapping;
+   import org.springframework.web.bind.annotation.RequestBody;
+   import org.springframework.web.bind.annotation.RequestMapping;
+   import org.springframework.web.bind.annotation.RestController;
+
+   @RestController
+   @RequestMapping("/api/employees")
+   public class EmployeeController {
+
+       private final EmployeeService employeeService;
+
+       @Autowired
+       public EmployeeController(EmployeeService employeeService) {
+           this.employeeService = employeeService;
+       }
+
+       @PostMapping
+       public ResponseEntity<String> createEmployee(@RequestBody Employee employee) {
+           employeeService.createEmployee(employee);
+           return new ResponseEntity<>("Employee created successfully", HttpStatus.CREATED);
+       }
+   }
+   ```
+
+5. **Employee Class**: Make sure your `Employee` class is properly defined.
+
+   ```java
+   package com.yourcompany.yourapp.model;
+
+   public class Employee {
+
+       private String id;
+       private String name;
+       private String position;
+
+       // Getters and setters
+
+       public String getId() {
+           return id;
+       }
+
+       public void setId(String id) {
+           this.id = id;
+       }
+
+       public String getName() {
+           return name;
+       }
+
+       public void setName(String name) {
+           this.name = name;
+       }
+
+       public String getPosition() {
+           return position;
+       }
+
+       public void setPosition(String position) {
+           this.position = position;
+       }
+   }
+   ```
+
+With this setup, whenever you create an Employee, the request body will be logged in JSON format at the DEBUG level in your `app.log` file. This assumes your `Employee` class is properly defined and the `ObjectMapper` from Jackson is available in your project.
