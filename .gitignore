@@ -1,3 +1,100 @@
+To write a unit test for `UserServiceImpl` using JUnit 5 and Mockito, we will need to mock the `AppUserRepo` and `ApplicationRepo` dependencies. Below is the complete unit test class for `UserServiceImpl`.
+
+```java
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+
+@ExtendWith(MockitoExtension.class)
+public class UserServiceImplTest {
+
+    @Mock
+    private AppUserRepo appUserRepo;
+
+    @Mock
+    private ApplicationRepo applicationRepo;
+
+    @InjectMocks
+    private UserServiceImpl userService;
+
+    @BeforeEach
+    public void setUp() {
+        userService = new UserServiceImpl();
+        userService.appUserRepo = appUserRepo;
+        userService.applicationRepo = applicationRepo;
+    }
+
+    @Test
+    public void testCreateUser_Success() {
+        String appName = "TestApp";
+        String appUser = "TestUser";
+
+        Application application = new Application();
+        application.setAppName(appName);
+        when(applicationRepo.findById(appName)).thenReturn(Optional.of(application));
+
+        userService.createUser(appName, appUser);
+
+        verify(appUserRepo).save(any(AppUserAccount.class));
+    }
+
+    @Test
+    public void testCreateUser_ApplicationNotFound() {
+        String appName = "InvalidApp";
+        String appUser = "TestUser";
+
+        when(applicationRepo.findById(appName)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> userService.createUser(appName, appUser));
+    }
+
+    @Test
+    public void testCreateUser_InvalidRequest() {
+        String appName = null;
+        String appUser = null;
+
+        assertThrows(RuntimeException.class, () -> userService.createUser(appName, appUser));
+    }
+}
+```
+
+### Explanation:
+
+1. **Imports**:
+   - `Assertions`, `Mockito`, and `JUnit` libraries for testing.
+   - `ModelMapper` to map objects.
+   - `MockitoExtension` to extend JUnit 5 with Mockito.
+
+2. **Annotations**:
+   - `@ExtendWith(MockitoExtension.class)` to integrate Mockito with JUnit 5.
+   - `@Mock` to create mock instances of `AppUserRepo` and `ApplicationRepo`.
+   - `@InjectMocks` to inject mocks into the `UserServiceImpl` instance.
+
+3. **Setup**:
+   - `setUp` method initializes `UserServiceImpl` and injects the mocked dependencies.
+
+4. **Test Cases**:
+   - `testCreateUser_Success`: Tests the successful creation of a user when the application is found.
+   - `testCreateUser_ApplicationNotFound`: Tests the scenario where the application is not found, expecting a `RuntimeException`.
+   - `testCreateUser_InvalidRequest`: Tests the scenario where the request is invalid (null values), expecting a `RuntimeException`.
+
+This setup ensures that the `UserServiceImpl` class is tested independently of its dependencies by using mock objects.
+
+
+
+
+
 To set up a production-grade logging system using SLF4J with Log4j2 in a Spring Boot application, follow these steps. We'll configure logging to capture log messages from various layers (Controller, Service, DAO) and set up a rolling policy for log rotation.
 
 ### Step 1: Add Dependencies
