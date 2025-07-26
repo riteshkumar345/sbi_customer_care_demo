@@ -1,497 +1,346 @@
-To write a unit test for `UserServiceImpl` using JUnit 5 and Mockito, we will need to mock the `AppUserRepo` and `ApplicationRepo` dependencies. Below is the complete unit test class for `UserServiceImpl`.
-
-```java
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
-
-@ExtendWith(MockitoExtension.class)
-public class UserServiceImplTest {
-
-    @Mock
-    private AppUserRepo appUserRepo;
-
-    @Mock
-    private ApplicationRepo applicationRepo;
-
-    @InjectMocks
-    private UserServiceImpl userService;
-
-    @BeforeEach
-    public void setUp() {
-        userService = new UserServiceImpl();
-        userService.appUserRepo = appUserRepo;
-        userService.applicationRepo = applicationRepo;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Application List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: ;
+      margin-bottom: 20px;
+    }
+    .search-container,
+    .add-container {
+	  margin-bottom: 10px;
+    }
+	.add-container button {
+     padding: 5px 20px;
+     font-size: 16px;
+     cursor: pointer;
+     background-color: #e0e0e0;
+     color: #00000;
+     border: 1px solid;
+     border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+    }
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      text-align: left;
     }
 
-    @Test
-    public void testCreateUser_Success() {
-        String appName = "TestApp";
-        String appUser = "TestUser";
-
-        Application application = new Application();
-        application.setAppName(appName);
-        when(applicationRepo.findById(appName)).thenReturn(Optional.of(application));
-
-        userService.createUser(appName, appUser);
-
-        verify(appUserRepo).save(any(AppUserAccount.class));
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
     }
 
-    @Test
-    public void testCreateUser_ApplicationNotFound() {
-        String appName = "InvalidApp";
-        String appUser = "TestUser";
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .pagination {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .pagination button {
+      padding: 8px 12px;
+      margin: 2px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      cursor: pointer;
+    }
+    .pagination button.active {
+      background-color: #007bff;
+      color: #fff;
+      border-color: #007bff;
+    }
+    .pagination button:hover {
+      background-color: #e0e0e0;
+    }
+    .container {
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea {
+      width: 300px;
+      padding: 5px;
+    }
+    #display-section {
+      border-top: 2px solid #ccc;
+      padding-top: 20px;
+    }
+  </style>
+</head>
 
-        when(applicationRepo.findById(appName)).thenReturn(Optional.empty());
+<body>
 
-        assertThrows(RuntimeException.class, () -> userService.createUser(appName, appUser));
+  <h1>Create Application</h1>
+  <hr><br>
+  
+  <!-- Add New App Form -->
+<div class="add-container" style="max-width: 380px;">
+  <div style="margin-bottom: 10px; display: flex; align-items: center;">
+    <label for="newAppName" style="width: 100px;">Name:</label>
+    <input type="text" id="newAppName" style="flex: 1;">
+  </div>
+
+  <div style="margin-bottom: 10px; display: flex; align-items: center;">
+    <label for="newAppDesc" style="width: 100px;">Description:</label>
+    <input type="text" id="newAppDesc" style="flex: 1;">
+  </div>
+  <br>
+  <button onclick="addNewApp()" style="width: 100px;">Create</button>
+</div>
+  
+  <!-- Search Input -->
+  <h1>Application List</h1>
+  <hr><br>
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search by app name...">
+  </div>
+
+  <!-- App Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <!-- Filled by JavaScript -->
+    </tbody>
+  </table>
+
+  <!-- Pagination Controls -->
+  <div class="pagination" id="pagination"></div>
+
+  <script>
+    let appList = [
+      { name: "ABC", desc: "ABC" },
+      { name: "ABCD", desc: "ABCD App" },
+      { name: "ABCDE", desc: "ABCDE App" },
+      { name: "Access_Test", desc: "AppID for Access Test Purpose" },
+      { name: "AEKO", desc: "AEKO" },
+      { name: "AEPS", desc: "AEPS" },
+      { name: "AFR", desc: "SAP Formula Racing" },
+      { name: "AIP", desc: "Automated Integration Process" },
+      { name: "ALERTING ", desc: "ALERTING" },
+      { name: "AMS_Logger", desc: "AMS_Logger" },
+      { name: "ANTON", desc: "Projekt ANTON" },
+      { name: "ASIC", desc: "ASIC" },
+	  { name: "B2B_UMS", desc: "B2B_UMS" },
+      { name: "BACKOUT", desc: "Backout Tool" },
+      { name: "BASIS", desc: "BASIS" },
+      { name: "BPA_GEN", desc: "BPA_GEN" },
+      { name: "BPACBD", desc: "CostBreakDown" },
+      { name: "BPluS_test2", desc: "BPluS Testinstanz" },
+      { name: "BTE", desc: "ONB / Bauteilentwicklung" }
+    ];
+
+    let filteredList = [...appList];
+    const rowsPerPage = 8;
+    let currentPage = 1;
+
+    function displayTable(page) {
+      const tableBody = document.getElementById("tableBody");
+      tableBody.innerHTML = "";
+
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pageItems = filteredList.slice(start, end);
+
+      if (pageItems.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="2">No results found.</td></tr>`;
+        return;
+      }
+
+      for (let item of pageItems) {
+        const row = `<tr><td>${item.name}</td><td>${item.desc}</td></tr>`;
+        tableBody.innerHTML += row;
+      }
     }
 
-    @Test
-    public void testCreateUser_InvalidRequest() {
-        String appName = null;
-        String appUser = null;
+    function setupPagination() {
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+      const pageCount = Math.ceil(filteredList.length / rowsPerPage);
 
-        assertThrows(RuntimeException.class, () -> userService.createUser(appName, appUser));
-    }
-}
-```
+      for (let i = 1; i <= pageCount; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add("active");
 
-### Explanation:
+        btn.addEventListener("click", () => {
+          currentPage = i;
+          displayTable(currentPage);
+          setupPagination();
+        });
 
-1. **Imports**:
-   - `Assertions`, `Mockito`, and `JUnit` libraries for testing.
-   - `ModelMapper` to map objects.
-   - `MockitoExtension` to extend JUnit 5 with Mockito.
-
-2. **Annotations**:
-   - `@ExtendWith(MockitoExtension.class)` to integrate Mockito with JUnit 5.
-   - `@Mock` to create mock instances of `AppUserRepo` and `ApplicationRepo`.
-   - `@InjectMocks` to inject mocks into the `UserServiceImpl` instance.
-
-3. **Setup**:
-   - `setUp` method initializes `UserServiceImpl` and injects the mocked dependencies.
-
-4. **Test Cases**:
-   - `testCreateUser_Success`: Tests the successful creation of a user when the application is found.
-   - `testCreateUser_ApplicationNotFound`: Tests the scenario where the application is not found, expecting a `RuntimeException`.
-   - `testCreateUser_InvalidRequest`: Tests the scenario where the request is invalid (null values), expecting a `RuntimeException`.
-
-This setup ensures that the `UserServiceImpl` class is tested independently of its dependencies by using mock objects.
-
-
-
-
-
-To set up a production-grade logging system using SLF4J with Log4j2 in a Spring Boot application, follow these steps. We'll configure logging to capture log messages from various layers (Controller, Service, DAO) and set up a rolling policy for log rotation.
-
-### Step 1: Add Dependencies
-
-First, add the required dependencies for SLF4J and Log4j2 in your `pom.xml` file.
-
-```xml
-<dependencies>
-    <!-- Spring Boot dependencies -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-
-    <!-- Logging dependencies -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-log4j2</artifactId>
-    </dependency>
-</dependencies>
-```
-
-### Step 2: Create Log4j2 Configuration File
-
-Create a `log4j2.xml` configuration file in the `src/main/resources` directory.
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
-    <Appenders>
-        <RollingFile name="RollingFileAppender" fileName="logs/app.log" filePattern="logs/app-%d{yyyy-MM-dd}.log">
-            <PatternLayout>
-                <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n</Pattern>
-            </PatternLayout>
-            <Policies>
-                <TimeBasedTriggeringPolicy />
-                <SizeBasedTriggeringPolicy size="10MB" />
-            </Policies>
-        </RollingFile>
-    </Appenders>
-
-    <Loggers>
-        <Logger name="com.yourpackage.controller" level="INFO" additivity="false">
-            <AppenderRef ref="RollingFileAppender" />
-        </Logger>
-        <Logger name="com.yourpackage.service" level="DEBUG" additivity="false">
-            <AppenderRef ref="RollingFileAppender" />
-        </Logger>
-        <Logger name="com.yourpackage.dao" level="WARN" additivity="false">
-            <AppenderRef ref="RollingFileAppender" />
-        </Logger>
-        <Root level="ERROR">
-            <AppenderRef ref="RollingFileAppender" />
-        </Root>
-    </Loggers>
-</Configuration>
-```
-
-### Step 3: Configure Spring Boot Application Properties
-
-Ensure that your `application.properties` file includes the following properties to use Log4j2 as the logging framework.
-
-```properties
-# Logging configuration
-logging.config=classpath:log4j2.xml
-```
-
-### Step 4: Implement Logging in Your Application
-
-Here's an example of how to implement logging in different layers of your Spring Boot application.
-
-#### Controller Layer
-
-```java
-package com.yourpackage.controller;
-
-import com.yourpackage.service.EmployeeService;
-import com.yourpackage.model.Employee;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/employees")
-public class EmployeeController {
-
-    private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
-
-    @Autowired
-    private EmployeeService employeeService;
-
-    @GetMapping
-    public List<Employee> getAllEmployees() {
-        logger.info("Fetching all employees");
-        return employeeService.getAllEmployees();
+        pagination.appendChild(btn);
+      }
     }
 
-    @GetMapping("/{id}")
-    public Employee getEmployeeById(@PathVariable Long id) {
-        logger.info("Fetching employee with id: {}", id);
-        return employeeService.getEmployeeById(id);
+    function handleSearch() {
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      filteredList = appList.filter(app => app.name.toLowerCase().includes(searchTerm));
+      currentPage = 1;
+      displayTable(currentPage);
+      setupPagination();
     }
 
-    @PostMapping
-    public Employee createEmployee(@RequestBody Employee employee) {
-        logger.info("Creating new employee: {}", employee);
-        return employeeService.createEmployee(employee);
+    function addNewApp() {
+      const name = document.getElementById("newAppName").value.trim();
+      const desc = document.getElementById("newAppDesc").value.trim();
+
+      if (!name || !desc) {
+        alert("Please enter both App Name and Description.");
+        return;
+      }
+
+      appList.push({ name, desc });
+      document.getElementById("newAppName").value = "";
+      document.getElementById("newAppDesc").value = "";
+
+      handleSearch(); // Apply filter again (if any)
     }
 
-    @PutMapping("/{id}")
-    public Employee updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
-        logger.info("Updating employee with id: {}", id);
-        return employeeService.updateEmployee(id, employee);
-    }
+    document.getElementById("searchInput").addEventListener("input", handleSearch);
 
-    @DeleteMapping("/{id}")
-    public void deleteEmployee(@PathVariable Long id) {
-        logger.warn("Deleting employee with id: {}", id);
-        employeeService.deleteEmployee(id);
-    }
-}
-```
+    // Initial render
+    displayTable(currentPage);
+    setupPagination();
+  </script>
 
-#### Service Layer
+</body>
 
-```java
-package com.yourpackage.service;
-
-import com.yourpackage.dao.EmployeeRepository;
-import com.yourpackage.model.Employee;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class EmployeeService {
-
-    private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    public List<Employee> getAllEmployees() {
-        logger.debug("Getting all employees from the database");
-        return employeeRepository.findAll();
-    }
-
-    public Employee getEmployeeById(Long id) {
-        logger.debug("Getting employee with id: {}", id);
-        return employeeRepository.findById(id).orElse(null);
-    }
-
-    public Employee createEmployee(Employee employee) {
-        logger.debug("Saving new employee to the database: {}", employee);
-        return employeeRepository.save(employee);
-    }
-
-    public Employee updateEmployee(Long id, Employee employee) {
-        logger.debug("Updating employee with id: {}", id);
-        return employeeRepository.save(employee);
-    }
-
-    public void deleteEmployee(Long id) {
-        logger.debug("Deleting employee with id: {}", id);
-        employeeRepository.deleteById(id);
-    }
-}
-```
-
-#### DAO Layer
-
-```java
-package com.yourpackage.dao;
-
-import com.yourpackage.model.Employee;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-}
-```
-
-### Step 5: Test the Configuration
-
-Run your Spring Boot application and perform some CRUD operations on the Employee API. Check the `logs/app.log` file to see the logged messages.
-
-By following these steps, you will have a production-grade logging setup using SLF4J with Log4j2 in your Spring Boot application, capturing log messages at different levels from various layers, and rotating logs based on time and size policies.
-
-#### 2
-Configuring a production-grade logging framework using SLF4J and Log4j2 in a Spring Boot application involves several steps. You will need to add the necessary dependencies, configure the logging framework using a `log4j2.xml` file, and ensure your code is set up to use the appropriate logging levels.
-
-Here are the steps to achieve this:
-
-### Step 1: Add Dependencies
-
-First, ensure you have the necessary dependencies in your `pom.xml` file:
-
-```xml
-<dependencies>
-    <!-- Spring Boot Starter Web -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-
-    <!-- Spring Boot Starter Log4j2 -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-log4j2</artifactId>
-    </dependency>
-
-    <!-- SLF4J binding for Log4j2 -->
-    <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-</dependencies>
-```
-
-### Step 2: Create `log4j2.xml` Configuration File
-
-Create a `log4j2.xml` file in the `src/main/resources` directory. This file will configure Log4j2 to log messages from your application to `app.log` with different log levels.
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
-    <Appenders>
-        <!-- Console Appender -->
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
-        </Console>
-        
-        <!-- File Appender -->
-        <File name="File" fileName="logs/app.log" append="true">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
-        </File>
-    </Appenders>
-
-    <Loggers>
-        <!-- Root Logger -->
-        <Root level="info">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
-        </Root>
-        
-        <!-- Application-specific loggers -->
-        <Logger name="com.yourcompany.yourapp.controller" level="debug" additivity="false">
-            <AppenderRef ref="File"/>
-        </Logger>
-        <Logger name="com.yourcompany.yourapp.service" level="info" additivity="false">
-            <AppenderRef ref="File"/>
-        </Logger>
-        <Logger name="com.yourcompany.yourapp.dao" level="warn" additivity="false">
-            <AppenderRef ref="File"/>
-        </Logger>
-    </Loggers>
-</Configuration>
-```
-
-### Step 3: Configure Logging in Your Code
-
-Ensure that your Spring Boot application and its components (Controller, Service, DAO) are using SLF4J for logging. Here’s an example of how you can use logging in your components:
-
-#### Controller Example
-```java
-package com.yourcompany.yourapp.controller;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
-
-@RestController
-@RequestMapping("/employees")
-public class EmployeeController {
-    private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
-
-    @GetMapping("/{id}")
-    public String getEmployee(@PathVariable String id) {
-        logger.debug("Fetching employee with ID: {}", id);
-        // Your logic here
-        return "Employee";
-    }
-
-    @PostMapping
-    public String createEmployee(@RequestBody String employee) {
-        logger.info("Creating new employee: {}", employee);
-        // Your logic here
-        return "Employee Created";
-    }
-
-    @PutMapping("/{id}")
-    public String updateEmployee(@PathVariable String id, @RequestBody String employee) {
-        logger.warn("Updating employee with ID: {}", id);
-        // Your logic here
-        return "Employee Updated";
-    }
-
-    @DeleteMapping("/{id}")
-    public String deleteEmployee(@PathVariable String id) {
-        logger.error("Deleting employee with ID: {}", id);
-        // Your logic here
-        return "Employee Deleted";
-    }
-}
-```
-
-#### Service Example
-```java
-package com.yourcompany.yourapp.service;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-@Service
-public class EmployeeService {
-    private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
-
-    public void performService() {
-        logger.info("Performing service operation");
-        // Your logic here
-    }
-}
-```
-
-#### DAO Example
-```java
-package com.yourcompany.yourapp.dao;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public class EmployeeDAO {
-    private static final Logger logger = LoggerFactory.getLogger(EmployeeDAO.class);
-
-    public void performDatabaseOperation() {
-        logger.warn("Performing database operation");
-        // Your logic here
-    }
-}
-```
-
-### Step 4: Run Your Application
-
-When you run your Spring Boot application, Log4j2 will use the `log4j2.xml` configuration to log messages from the Controller, Service, and DAO layers to `app.log` with the specified log levels (DEBUG, INFO, WARN, ERROR).
-
-You can customize the logging patterns, log levels, and appenders as per your requirements. This configuration will ensure that all log messages are captured in the `app.log` file with appropriate log levels.
+</html>
 
 
-####
-HELP.md
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JWT User Management</title>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+			margin: 40 px;
+            background-color: #f9f9f9s;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 20%;
+            border-collapse: collapse;
+            background-color: #fff;
+			text-align: left;
+        }
+
+        th, td {
+            padding: 12px 15px;
+			border: 1px solid #ddd
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+        tr:hover {
+            background-color: #f1f1f1ss;
+        }
+        .add-user-header {
+            font-weight: bold;
+            padding: 0.05rem;
+            background-color: #f4f4f4;
+			width: 19.7%;
+			border: 1px solid #ddd
+        }
+
+        input[type="text"] {
+            width: 18.5%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-actions {
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 12px 15px;
+            font-size: 16px;
+			cursor: pointer;
+            font-weight: #e0e0e0s;
+			color: #00000;
+			border: 1px solid;
+            border-radius: 4px;
+			
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Technical user for '<span th:text="${	}">PBA</span>'</h1>
+	<hr><br>
+    <form th:action="@{/jwt-users/save}" method="post" 
+          hx-post="/jwt-users/save" hx-target="#form-container" hx-swap="outerHTML" id="form-container">
+
+        <!-- JWT User Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;" >Revoke</th>
+                    <th>Technical User</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="user : ${jwtUsers}" >
+                    <td>
+                        <input type="checkbox" name="revokeUsers" th:value="${user}" />
+                    </td>
+                    <td th:text="${user}" align="left">FOX0ABC</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Add new user -->
+		<br><br>
+        <div class="add-user-header">Add a new Technical User</div>
+        <input type="text" name="newUser" placeholder="Enter a new technical user..." th:value="${newUser}"/>
+
+        <!-- Save Button -->
+        <div class="form-actions">
+            <button type="submit">Save</button>
+        </div>
+    </form>
+
+</body>
+</html>
