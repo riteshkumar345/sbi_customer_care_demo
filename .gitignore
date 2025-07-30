@@ -2,6 +2,222 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>App Permission UI</title>
+  <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      padding: 20px;
+      background: #f4f6f8;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      width: 600px;
+    }
+
+    select, button {
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .app-select,
+    .multi-select {
+      display: flex;
+      gap: 10px;
+      align-items: top;
+      flex-wrap: wrap;
+    }
+
+    .permissions-card {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      //justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .permissions-card .permissions {
+      display: flex;
+      gap: 15px;
+      margin-left: 15px;
+    }
+
+    .permissions-card button {
+      background: crimson;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 110px;
+    }
+
+    .save-btn {
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    label {
+      font-size: 14px;
+    }
+
+    .multi-permissions {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Permissions for 'AppName'</h2>
+<hr>
+
+<!-- Bottom section: Multi-select with shared permissions -->
+<div class="section">
+
+  <!-- App permissions output -->
+  <div id="permissionCards"></div>
+  <h3>Add one or more applications to the list</h3>
+
+  <div class="multi-select">
+    <select id="multiAppSelect" multiple size="4" style="width: 400px; height: 100px; ">
+      <option value="OwnerApp1">OwnerApp1</option>
+      <option value="OwnerApp2">OwnerApp2</option>
+      <option value="OwnerApp3">OwnerApp3</option>
+      <option value="OwnerApp4">OwnerApp4</option>
+      <option value="OwnerApp5">OwnerApp5</option>
+    </select>
+
+    <div class="multi-permissions">
+      <label><input type="checkbox" id="multi-read"> Read</label>
+      <label><input type="checkbox" id="multi-write"> Write</label>
+      <label><input type="checkbox" id="multi-delete"> Delete</label>
+      <label><input type="checkbox" id="multi-manage"> Manage</label>
+    </div>
+
+    <button onclick="addMultipleApps()" style="margin-left: 13px;">Add multiple</button>
+  </div>
+</div>
+
+<!-- Save button -->
+<button class="save-btn" onclick="savePermissions()">Save</button>
+
+<script>
+  const selectedApps = new Set();
+
+  function addApp() {
+    const dropdown = document.getElementById('appDropdown');
+    const app = dropdown.value;
+    if (!app || selectedApps.has(app)) {
+      dropdown.value = '';
+      return;
+    }
+    createCard(app, []);
+    selectedApps.add(app);
+    dropdown.value = '';
+  }
+
+  function addMultipleApps() {
+    const select = document.getElementById('multiAppSelect');
+    const read = document.getElementById('multi-read').checked;
+    const write = document.getElementById('multi-write').checked;
+    const del = document.getElementById('multi-delete').checked;
+    const manage = document.getElementById('multi-manage').checked;
+
+    const selected = Array.from(select.selectedOptions).map(opt => opt.value);
+
+    const permissions = [];
+    if (read) permissions.push("read");
+    if (write) permissions.push("write");
+    if (del) permissions.push("delete");
+    if (manage) permissions.push("manage");
+
+    selected.forEach(app => {
+      if (!selectedApps.has(app)) {
+        createCard(app, permissions);
+        selectedApps.add(app);
+      }
+    });
+
+    // Optionally clear selections
+    select.selectedIndex = -1;
+    document.getElementById('multi-read').checked = false;
+    document.getElementById('multi-write').checked = false;
+    document.getElementById('multi-delete').checked = false;
+    document.getElementById('multi-manage').checked = false;
+  }
+
+  function createCard(app, perms = []) {
+    const container = document.getElementById('permissionCards');
+    const card = document.createElement('div');
+    card.className = 'permissions-card';
+    card.dataset.app = app;
+
+    card.innerHTML = `
+      <strong>${app}</strong>
+      <div class="permissions">
+        <label><input type="checkbox" value="read" ${perms.includes("read") ? "checked" : ""}> Read</label>
+        <label><input type="checkbox" value="write" ${perms.includes("write") ? "checked" : ""}> Write</label>
+        <label><input type="checkbox" value="delete" ${perms.includes("delete") ? "checked" : ""}> Delete</label>
+        <label><input type="checkbox" value="manage" ${perms.includes("manage") ? "checked" : ""}> Manage</label>
+      </div>
+      <button onclick="removeApp(this, '${app}')">Remove</button>
+    `;
+    container.appendChild(card);
+  }
+
+  function removeApp(btn, app) {
+    btn.closest('.permissions-card').remove();
+    selectedApps.delete(app);
+  }
+
+  function savePermissions() {
+    const cards = document.querySelectorAll('.permissions-card');
+    const permissions = [];
+
+    cards.forEach(card => {
+      const app = card.dataset.app;
+      const perms = Array.from(card.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+      permissions.push({ app, permissions: perms });
+    });
+
+    console.log("Saving Permissions:", permissions);
+    alert("Permissions saved!");
+  }
+</script>
+
+</body>
+</html>
+
+
+====================================
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
   <title>Application List</title>
   <style>
     body {
